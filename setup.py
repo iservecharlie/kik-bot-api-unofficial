@@ -1,4 +1,3 @@
-from codecs import open
 from os import path
 
 from setuptools import setup, find_packages
@@ -25,18 +24,18 @@ setup(
         'Development Status :: 3 - Alpha',
 
         'Intended Audience :: Developers',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3'
     ],
 
-    keywords=['kik', 'bot', 'kikbot', 'kik-messenger-platform', 'api', 'unofficial', 'python',],
+    keywords=['kik', 'bot', 'kikbot', 'kik-messenger-platform', 'api', 'unofficial', 'python'],
 
     packages=find_packages(exclude=['docs', 'test']),
 
-    install_requires=['pbkdf2', 'rsa', 'lxml', 'bs4', 'protobuf', 'requests', 'httplib2'],
+    install_requires=['pbkdf2', 'rsa', 'lxml', 'bs4', 'protobuf', 'requests', 'httplib2', 'random-word'],
 
     extras_require={
         'dev': [],
-        'test': [],
+        'test': []
     },
 
     package_data={
@@ -44,8 +43,6 @@ setup(
     },
 
     entry_points={
-        'console_scripts': [
-            'kikapi=kik_unofficial.cmdline:execute',
-        ],
+        'console_scripts': ['kikapi=kik_unofficial.cmdline:execute']
     },
 )
