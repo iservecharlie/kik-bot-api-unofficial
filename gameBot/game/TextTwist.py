@@ -35,6 +35,7 @@ class TextTwist:
     HINT_SOURCE = "https://dictionaryapi.com/api/v3/references/sd4/json/"
     OLD_WORD_API_URL = "https://nlp.fi.muni.cz/projekty/random_word/run.cgi?"
     DEFAULT_CONFIG = {
+        "verbose_logging": False,
         "min_length": 5,
         "max_length": 8,
         "parts_of_speech": "verbs",
@@ -55,7 +56,7 @@ class TextTwist:
         self.score_board = {}
         self.response_lock = False
         self.used_words = []
-        self.cached_hint = [] #save up on api calls
+        self.cached_hint = []
         self.random_word_generator = RandomWords()
         self.init_game()
 
@@ -160,14 +161,15 @@ class TextTwist:
             if self.number_of_rounds != 0 and self.number_of_rounds >= self.current_round:
                 return True
         else:
-            print("Ignored response because wrong word? {}; response_locked? {}; not in name_lookup {}"
-                  .format(response != self.current_round, self.response_lock, from_jid not in self.name_lookup))
+            if self.game_config["verbose_logging"]:
+                print("Ignored response because wrong word? {}; response_locked? {}; not in name_lookup {}"
+                      .format(response != self.current_round, self.response_lock, from_jid not in self.name_lookup))
             return False
 
     def get_hint(self, word):
         hint = []
         try:
-            print("Initializing hint for {}".format(self.current_word))
+            print("Initializing hint for {}".format(word))
             h = httplib2.Http(".cache")
             url_header = {'content-type': 'application/json'}
             (resp_headers, content) = h.request(
@@ -175,9 +177,9 @@ class TextTwist:
             json_string = str(content.decode())
             data = json.loads(json_string)[0]
             hint = data["shortdef"]
-            print("Found {} definition for {}".format(len(hint), self.current_word))
+            print("Found {} definition for {}".format(len(hint), word))
         except:
-            print("[XXX] Cannot find a hint for word {}.".format(self.current_word))
+            print("[XXX] Cannot find a hint for word {}.".format(word))
         return hint
 
     def display_shuffled_word(self, prefix_message):
