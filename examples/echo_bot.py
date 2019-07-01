@@ -1,54 +1,96 @@
-import sys
-import time
+"""
+A Kik bot that just logs every event that it gets (new message, message read, etc.),
+and echos back whatever chat messages it receives.
+"""
 
-from kik_unofficial.kikclient import KikClient
+import kik_unofficial.datatypes.xmpp.chatting as chatting
+from kik_unofficial.client import KikClient
+from kik_unofficial.callbacks import KikClientCallback
+from kik_unofficial.datatypes.xmpp.errors import SignUpError, LoginError
+from kik_unofficial.datatypes.xmpp.roster import FetchRosterResponse, PeerInfoResponse
+from kik_unofficial.datatypes.xmpp.sign_up import RegisterResponse, UsernameUniquenessResponse
+from kik_unofficial.datatypes.xmpp.login import LoginResponse, ConnectionFailedResponse
+
+username = 'your_kik_username'
+password = 'your_kik_password'
 
 
 def main():
-    username, password = "your_kik_username", "your_kik_password"
-    kik_client = KikClient(username, password)
+    bot = EchoBot()
 
-    print("[+] Listening for incoming events.")
 
-    # main events loop
-    while True:
+class EchoBot(KikClientCallback):
+    def __init__(self):
+        self.client = KikClient(self, username, password)
 
-        info = kik_client.get_next_event()
-        if "type" not in info:
-            continue
+    def on_authenticated(self):
+        print("Now I'm Authenticated, let's request roster")
+        self.client.request_roster()
 
-        if info["type"] == "message_read":
-            print("[+] Human has read the message (user " + info["from"] + ", message id: " + info["message_id"] + ")")
+    def on_login_ended(self, response: LoginResponse):
+        print("Full name: {} {}".format(response.first_name, response.last_name))
 
-        elif info["type"] == "is_typing":
-            if info["is_typing"]:
-                print("[+] Human is typing (user " + info["from"] + ")")
-            else:
-                print("[+] Human is not typing (user " + info["from"] + ")")
+    def on_chat_message_received(self, chat_message: chatting.IncomingChatMessage):
+        print("[+] '{}' says: {}".format(chat_message.from_jid, chat_message.body))
+        print("[+] Replaying.")
+        self.client.send_chat_message(chat_message.from_jid, "You said \"" + chat_message.body + "\"!")
 
-        elif info["type"] == "message":
-            partner = info["from"]
-            print("[+] Human says: \"" + info["body"] + "\" (user " + partner + ")")
+    def on_message_delivered(self, response: chatting.IncomingMessageDeliveredEvent):
+        print("[+] Chat message with ID {} is delivered.".format(response.message_id))
 
-            kik_client.send_read_confirmation(partner, info["message_id"])
-            replay = "You said '" + info["body"] + "'!"
-            kik_client.send_is_typing(partner, "true")
-            time.sleep(0.2 * len(replay))
-            kik_client.send_is_typing(partner, "false")
-            kik_client.send_message(partner, replay)
+    def on_message_read(self, response: chatting.IncomingMessageReadEvent):
+        print("[+] Human has read the message with ID {}.".format(response.message_id))
 
-        elif info["type"] == "end":
-            print("[!] Server ended communication.")
-            break
+    def on_group_message_received(self, chat_message: chatting.IncomingGroupChatMessage):
+        print("[+] '{}' from group ID {} says: {}".format(chat_message.from_jid, chat_message.group_jid,
+                                                          chat_message.body))
 
-    print("[+] Done!")
-    kik_client.close()
+    def on_is_typing_event_received(self, response: chatting.IncomingIsTypingEvent):
+        print("[+] {} is now {}typing.".format(response.from_jid, "not " if not response.is_typing else ""))
+
+    def on_group_is_typing_event_received(self, response: chatting.IncomingGroupIsTypingEvent):
+        print("[+] {} is now {}typing in group {}".format(response.from_jid, "not " if not response.is_typing else "",
+                                                          response.group_jid))
+
+    def on_roster_received(self, response: FetchRosterResponse):
+        print("[+] Chat partners:\n" + '\n'.join([str(member) for member in response.peers]))
+
+    def on_friend_attribution(self, response: chatting.IncomingFriendAttribution):
+        print("[+] Friend attribution request from " + response.referrer_jid)
+
+    def on_image_received(self, image_message: chatting.IncomingImageMessage):
+        print("[+] Image message was received from {}".format(image_message.from_jid))
+    
+    def on_peer_info_received(self, response: PeerInfoResponse):
+        print("[+] Peer info: " + str(response.users))
+
+    def on_group_status_received(self, response: chatting.IncomingGroupStatus):
+        print("[+] Status message in {}: {}".format(response.group_jid, response.status))
+
+    def on_group_receipts_received(self, response: chatting.IncomingGroupReceiptsEvent):
+        print("[+] Received receipts in group {}: {}".format(response.group_jid, ",".join(response.receipt_ids)))
+
+    def on_status_message_received(self, response: chatting.IncomingStatusResponse):
+        print("[+] Status message from {}: {}".format(response.from_jid, response.status))
+
+    def on_username_uniqueness_received(self, response: UsernameUniquenessResponse):
+        print("Is {} a unique username? {}".format(response.username, response.unique))
+
+    def on_sign_up_ended(self, response: RegisterResponse):
+        print("[+] Registered as " + response.kik_node)
+
+    # Error handling
+
+    def on_connection_failed(self, response: ConnectionFailedResponse):
+        print("[-] Connection failed: " + response.message)
+
+    def on_login_error(self, login_error: LoginError):
+        if login_error.is_captcha():
+            login_error.solve_captcha_wizard(self.client)
+
+    def on_register_error(self, response: SignUpError):
+        print("[-] Register error: {}".format(response.message))
 
 
 if __name__ == '__main__':
-    if sys.version_info[0] < 3:
-        raise Exception("Must be using Python 3!!")
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("[!] User stopped execution.")
+    main()
