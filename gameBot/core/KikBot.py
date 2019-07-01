@@ -133,7 +133,7 @@ class KikBot(KikClientCallback):
         print("[*]ROSTER init:")
         print("[*]FetchRosterResponse dir:")
         print(dir(response))
-        for peer in response.members:
+        for peer in response.peers:
             try:
                 if type(peer) is User:
                     print("[*] User: {}".format(peer))
