@@ -2,6 +2,7 @@ import json
 
 import kik_unofficial.datatypes.xmpp.chatting as chatting
 from kik_unofficial.client import KikClient
+from os import environ
 import httplib2
 import random
 from random import shuffle
@@ -39,7 +40,7 @@ class TextTwist:
         "parts_of_speech": "verbs",
         "form": "use",
         "probability": "true",
-        "hint_api_key_param": "**"
+        "hint_api_key_param": environ["word_defn_api_key_param"]
     }
 
     def __init__(self, group_jid, text_twist_config, number_of_rounds, name_lookup, client: KikClient):

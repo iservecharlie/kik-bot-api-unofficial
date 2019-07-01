@@ -5,7 +5,7 @@ from kik_unofficial.datatypes.xmpp.errors import SignUpError, LoginError
 from kik_unofficial.datatypes.xmpp.roster import FetchRosterResponse, PeerInfoResponse
 from kik_unofficial.datatypes.xmpp.sign_up import RegisterResponse, UsernameUniquenessResponse
 from kik_unofficial.datatypes.xmpp.login import LoginResponse, ConnectionFailedResponse
-from kik_unofficial.datatypes.peers import User, Group, GroupMember
+from kik_unofficial.datatypes.peers import User, Group
 
 from game.TextTwist import TextTwist
 from core.WordBank import WordBank
@@ -27,7 +27,7 @@ DEFAULT_HELP_MESSAGE = "Base commands:  \n" \
                        "  Games available: texttwist."
 KIK_BOT_TRIGGERS = [LEAVE_TRIGGER, GAME_LIST_TRIGGER, TEST_TRIGGER]
 
-GLOBAL_ADMIN = [environ['global_admin']]
+GLOBAL_ADMIN = [environ['global_admin_user'], environ['global_admin_member']]
 
 class KikBot(KikClientCallback):
     def __init__(self):
@@ -131,8 +131,6 @@ class KikBot(KikClientCallback):
 
     def on_roster_received(self, response: FetchRosterResponse):
         print("[*]ROSTER init:")
-        print("[*]FetchRosterResponse dir:")
-        print(dir(response))
         for peer in response.peers:
             try:
                 if type(peer) is User:
