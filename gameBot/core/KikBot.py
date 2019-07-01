@@ -10,8 +10,10 @@ from kik_unofficial.datatypes.peers import User, Group
 from game.TextTwist import TextTwist
 from core.WordBank import WordBank
 
-username = '*'
-password = '*'
+from os import environ
+
+username = environ['kik_username']
+password = environ['kik_password']
 
 LEAVE_TRIGGER = "layas kulas"
 GAME_LIST_TRIGGER = "laro tayo kulas"
@@ -25,7 +27,7 @@ DEFAULT_HELP_MESSAGE = "Base commands:  \n" \
                        "  Games available: texttwist."
 KIK_BOT_TRIGGERS = [LEAVE_TRIGGER, GAME_LIST_TRIGGER, TEST_TRIGGER]
 
-GLOBAL_ADMIN = []
+GLOBAL_ADMIN = [environ['global_admin']]
 
 class KikBot(KikClientCallback):
     def __init__(self):
