@@ -29,6 +29,7 @@ KIK_BOT_TRIGGERS = [LEAVE_TRIGGER, GAME_LIST_TRIGGER, TEST_TRIGGER]
 
 GLOBAL_ADMIN = [environ['global_admin_user'], environ['global_admin_member']]
 
+
 class KikBot(KikClientCallback):
     def __init__(self):
         self.client = KikClient(self, username, password)
@@ -38,7 +39,8 @@ class KikBot(KikClientCallback):
         self.logging = {
             "typing": False,
             "receipts": False,
-            "read": False
+            "read": False,
+            "group_chat": True
         }
         self.word_bank = WordBank()
         self.text_twist_sessions = {}
@@ -73,7 +75,8 @@ class KikBot(KikClientCallback):
         group_code = self.group_code_lookup[group_jid]
         name = self.name_lookup[member_jid]
         clean_message = chat_message.body.strip().lower()
-        print("[+] '{}' from group '{}' says: {}".format(name, group_code, chat_message.body))
+        if self.logging['group_chat']:
+            print("[+] '{}' from group '{}' says: {}".format(name, group_code, chat_message.body))
 
         admins = self.group_admins[group_jid]
         if clean_message in KIK_BOT_TRIGGERS:
