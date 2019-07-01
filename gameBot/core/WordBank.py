@@ -1,6 +1,6 @@
 import httplib2
 import json
-# pip3 install random-word
+
 
 class WordBank:
     WORD_SOURCE = "https://randomwordgenerator.com/json/words.json"

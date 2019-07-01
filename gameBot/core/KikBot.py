@@ -10,8 +10,8 @@ from kik_unofficial.datatypes.peers import User, Group
 from game.TextTwist import TextTwist
 from core.WordBank import WordBank
 
-username = 'username'
-password = 'password'
+username = '*'
+password = '*'
 
 LEAVE_TRIGGER = "layas kulas"
 GAME_LIST_TRIGGER = "laro tayo kulas"
@@ -25,6 +25,7 @@ DEFAULT_HELP_MESSAGE = "Base commands:  \n" \
                        "  Games available: texttwist."
 KIK_BOT_TRIGGERS = [LEAVE_TRIGGER, GAME_LIST_TRIGGER, TEST_TRIGGER]
 
+GLOBAL_ADMIN = []
 
 class KikBot(KikClientCallback):
     def __init__(self):
@@ -33,7 +34,9 @@ class KikBot(KikClientCallback):
         self.name_lookup = {}
         self.group_admins = {}
         self.logging = {
-            "typing": False
+            "typing": False,
+            "receipts": False,
+            "read": False
         }
         self.word_bank = WordBank()
         self.text_twist_sessions = {}
@@ -59,7 +62,8 @@ class KikBot(KikClientCallback):
         print("[+] Chat message with ID {} is delivered.".format(response.message_id))
 
     def on_message_read(self, response: chatting.IncomingMessageReadEvent):
-        print("[+] Human has read the message with ID {}.".format(response.message_id))
+        if self.logging["read"]:
+            print("[+] Human has read the message with ID {}.".format(response.message_id))
 
     def on_group_message_received(self, chat_message: chatting.IncomingGroupChatMessage):
         group_jid = chat_message.group_jid
@@ -76,7 +80,7 @@ class KikBot(KikClientCallback):
                 self.client.leave_group(group_jid)
             elif clean_message == TEST_TRIGGER:
                 self.client.send_chat_message(group_jid, "-GER")
-        elif clean_message in TextTwist.TRIGGERS:
+        elif clean_message in TextTwist.TRIGGERS or clean_message.startswith(TextTwist.START):
             if group_jid in self.text_twist_sessions:
                 text_twist = self.text_twist_sessions[group_jid]
                 if clean_message == TextTwist.START and member_jid in admins:
@@ -93,16 +97,26 @@ class KikBot(KikClientCallback):
                 else:
                     text_twist.process_command_trigger(chat_message)
             else:
-                if clean_message == TextTwist.START and member_jid in admins:
+                if clean_message.startswith(TextTwist.START) and member_jid in admins:
                     print("[+] Group {} starting a game session of TextTwist.".format(group_code))
+                    number_of_rounds = 0
+                    tokens = clean_message.replace(TextTwist.START, "").split(" ")
+                    if len(tokens) > 1:
+                        try:
+                            number_of_rounds = int(tokens[0])
+                        except ValueError:
+                            number_of_rounds = 0
                     self.text_twist_sessions[group_jid] = TextTwist(group_jid, TextTwist.DEFAULT_CONFIG,
-                                                                    self.name_lookup, self.client)
+                                                                    number_of_rounds, self.name_lookup, self.client)
                 elif clean_message == TextTwist.END and member_jid in admins:
                     self.client.send_chat_message(group_jid, "There is no game of Text Twist active.\n"
                                                              " To start a game an admin must enter: "
                                                             "'" + TextTwist.START + "'")
         elif group_jid in self.text_twist_sessions:
-            self.text_twist_sessions[group_jid].process_response(chat_message)
+            end_game = self.text_twist_sessions[group_jid].process_response(chat_message)
+            if end_game:
+                self.text_twist_sessions[group_jid].end_game()
+                del self.text_twist_sessions[group_jid]
 
     def on_is_typing_event_received(self, response: chatting.IncomingIsTypingEvent):
         if self.logging["typing"]:
@@ -122,7 +136,7 @@ class KikBot(KikClientCallback):
                 if type(peer) is Group:
                     print("[*] Group: {}".format(peer))
                     group_jid = peer.jid
-                    admins = []
+                    admins = GLOBAL_ADMIN
                     for group_member in peer.members:
                         member_jid = group_member.jid
                         member_is_admin = group_member.is_admin or group_member.is_owner
@@ -149,7 +163,8 @@ class KikBot(KikClientCallback):
         print("[+] Status message in {}: {}".format(response.group_jid, response.status))
 
     def on_group_receipts_received(self, response: chatting.IncomingGroupReceiptsEvent):
-        print("[+] Received receipts in group {}: {}".format(response.group_jid, ",".join(response.receipt_ids)))
+        if self.logging["receipts"]:
+            print("[+] Received receipts in group {}: {}".format(response.group_jid, ",".join(response.receipt_ids)))
 
     def on_status_message_received(self, response: chatting.IncomingStatusResponse):
         print("[+] Status message from {}: {}".format(response.from_jid, response.status))
