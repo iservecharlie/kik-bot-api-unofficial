@@ -5,7 +5,7 @@ from kik_unofficial.datatypes.xmpp.errors import SignUpError, LoginError
 from kik_unofficial.datatypes.xmpp.roster import FetchRosterResponse, PeerInfoResponse
 from kik_unofficial.datatypes.xmpp.sign_up import RegisterResponse, UsernameUniquenessResponse
 from kik_unofficial.datatypes.xmpp.login import LoginResponse, ConnectionFailedResponse
-from kik_unofficial.datatypes.peers import User, Group
+from kik_unofficial.datatypes.peers import User, Group, GroupMember
 
 from game.TextTwist import TextTwist
 from core.WordBank import WordBank
@@ -131,6 +131,8 @@ class KikBot(KikClientCallback):
 
     def on_roster_received(self, response: FetchRosterResponse):
         print("[*]ROSTER init:")
+        print("[*]FetchRosterResponse dir:")
+        print(dir(response))
         for peer in response.members:
             try:
                 if type(peer) is User:
