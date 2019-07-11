@@ -2,7 +2,6 @@ from core.KikBot import KikBot
 
 
 def main():
-    print("TESTING")
     bot = KikBot()
 
 
