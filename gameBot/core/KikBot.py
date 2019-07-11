@@ -7,8 +7,8 @@ from kik_unofficial.datatypes.xmpp.sign_up import RegisterResponse, UsernameUniq
 from kik_unofficial.datatypes.xmpp.login import LoginResponse, ConnectionFailedResponse
 from kik_unofficial.datatypes.peers import User, Group
 
-from game.TextTwist import TextTwist
-from core.WordBank import WordBank
+from gameBot.game.TextTwist import TextTwist
+from gameBot.core.WordBank import WordBank
 
 from os import environ
 
