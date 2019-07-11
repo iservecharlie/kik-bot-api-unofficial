@@ -1,2 +1,4 @@
 kik-unofficial==0.3
 Random-Word==1.0.4
+gunicorn
+Flask
