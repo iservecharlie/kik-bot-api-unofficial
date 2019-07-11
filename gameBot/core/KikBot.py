@@ -54,13 +54,20 @@ class KikBot(KikClientCallback):
 
     def on_chat_message_received(self, chat_message: chatting.IncomingChatMessage):
         print("[+] '{}' says: {}".format(chat_message.from_jid, chat_message.body))
-        clean_message = chat_message.body.strip().lower()
-        help_message = DEFAULT_HELP_MESSAGE
-        if clean_message.startswith("man "):
-            game_name = clean_message.split(" ")[1]
-            if "texttwist" == game_name:
-                help_message = TextTwist.TEXT_TWIST_HELP
-        self.client.send_chat_message(chat_message.from_jid, help_message)
+        if chat_message.from_jid == environ['global_admin_user']:
+            if chat_message.body.startswith("add_admin"):
+                member_id = chat_message.body.split(" ")[1]
+                for group_admin_list in self.group_admins:
+                    group_admin_list.append(member_id)
+            self.client.send_chat_message(chat_message.from_jid, "Yes my Lord")
+        else:
+            clean_message = chat_message.body.strip().lower()
+            help_message = DEFAULT_HELP_MESSAGE
+            if clean_message.startswith("man "):
+                game_name = clean_message.split(" ")[1]
+                if "texttwist" == game_name:
+                    help_message = TextTwist.TEXT_TWIST_HELP
+            self.client.send_chat_message(chat_message.from_jid, help_message)
 
     def on_message_delivered(self, response: chatting.IncomingMessageDeliveredEvent):
         print("[+] Chat message with ID {} is delivered.".format(response.message_id))
@@ -76,7 +83,7 @@ class KikBot(KikClientCallback):
         name = self.name_lookup[member_jid]
         clean_message = chat_message.body.strip().lower()
         if self.logging['group_chat']:
-            print("[+] '{}' from group '{}' says: {}".format(name, group_code, chat_message.body))
+            print("[+] '{}({})' from group '{}' says: {}".format(chat_message.from_jid, name, group_code, chat_message.body))
 
         admins = self.group_admins[group_jid]
         if clean_message in KIK_BOT_TRIGGERS:
