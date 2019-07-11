@@ -57,7 +57,7 @@ class KikBot(KikClientCallback):
         if chat_message.from_jid == environ['global_admin_user']:
             if chat_message.body.startswith("add_admin"):
                 member_id = chat_message.body.split(" ")[1]
-                for group_admin_list in self.group_admins:
+                for group_admin_list in self.group_admins.values():
                     group_admin_list.append(member_id)
             self.client.send_chat_message(chat_message.from_jid, "Yes my Lord")
         else:
