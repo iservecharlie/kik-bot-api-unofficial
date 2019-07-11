@@ -57,8 +57,12 @@ class KikBot(KikClientCallback):
         if chat_message.from_jid == environ['global_admin_user']:
             if chat_message.body.startswith("add_admin"):
                 member_id = chat_message.body.split(" ")[1]
-                for group_admin_list in self.group_admins.values():
-                    group_admin_list.append(member_id)
+                for group_id, group_admin_list in self.group_admins.items():
+                    if member_id not in group_admin_list:
+                        group_admin_list.append(member_id)
+                        print("[+] will add '{}' as an admin in group '{}'".format(member_id, group_id))
+                    else:
+                        print("[+] '{}' is already aon admin in group '{}'".format(member_id, group_id))
             self.client.send_chat_message(chat_message.from_jid, "Yes my Lord")
         else:
             clean_message = chat_message.body.strip().lower()
