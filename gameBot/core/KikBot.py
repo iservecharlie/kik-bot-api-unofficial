@@ -84,7 +84,13 @@ class KikBot(KikClientCallback):
         group_jid = chat_message.group_jid
         member_jid = chat_message.from_jid
         group_code = self.group_code_lookup[group_jid]
-        name = self.name_lookup[member_jid]
+        try:
+            name = self.name_lookup[member_jid]
+        except KeyError:
+            #todo: add the user instead of refresh full roster
+            self.client.request_roster()
+            print("[x] '{}' not in current roster list. Updating roster".format(member_jid))
+            name = member_jid
         clean_message = chat_message.body.strip().lower()
         if self.logging['group_chat']:
             print("[+] '{}({})' from group '{}' says: {}".format(chat_message.from_jid, name, group_code, chat_message.body))
