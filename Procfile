@@ -1,1 +1,1 @@
-worker: python gameBot/main.py
+worker: python main.py
