@@ -7,8 +7,9 @@ from kik_unofficial.datatypes.xmpp.sign_up import RegisterResponse, UsernameUniq
 from kik_unofficial.datatypes.xmpp.login import LoginResponse, ConnectionFailedResponse
 from kik_unofficial.datatypes.peers import User, Group
 
-from game.TextTwist import TextTwist
-from core.WordBank import WordBank
+from gameBot.game.TextTwist import TextTwist
+from gameBot.core.WordBank import WordBank
+from gameBot.core.persistence.Connection import Connection
 
 from os import environ
 
@@ -18,7 +19,6 @@ password = environ['kik_password']
 LEAVE_TRIGGER = "layas kulas"
 GAME_LIST_TRIGGER = "laro tayo kulas"
 TEST_TRIGGER = "ping"
-
 DEFAULT_HELP_MESSAGE = "Base commands:  \n" \
                        " Admin only: \n" \
                        "  " + LEAVE_TRIGGER + " - bot leaves \n" \
@@ -26,8 +26,8 @@ DEFAULT_HELP_MESSAGE = "Base commands:  \n" \
                        " Game bot manual. For help with game commands reply with 'man [game name]." \
                        "  Games available: texttwist."
 KIK_BOT_TRIGGERS = [LEAVE_TRIGGER, GAME_LIST_TRIGGER, TEST_TRIGGER]
-
-GLOBAL_ADMIN = [environ['global_admin_user'], environ['global_admin_member']]
+GLOBAL_ADMIN = [environ['global_admin']]
+IS_DEV = True
 
 
 class KikBot(KikClientCallback):
@@ -47,6 +47,9 @@ class KikBot(KikClientCallback):
 
     def on_authenticated(self):
         print("Now I'm Authenticated, let's request roster")
+        if not IS_DEV:
+            for global_admin in GLOBAL_ADMIN:
+                self.client.send_chat_message(global_admin, "I am now online.")
         self.client.request_roster()
 
     def on_login_ended(self, response: LoginResponse):
@@ -134,25 +137,28 @@ class KikBot(KikClientCallback):
 
     def on_roster_received(self, response: FetchRosterResponse):
         print("[*]ROSTER init:")
+        connection = Connection()
         for peer in response.peers:
-            try:
-                if type(peer) is User:
-                    print("[*] User: {}".format(peer))
-                if type(peer) is Group:
-                    print("[*] Group: {}".format(peer))
-                    group_jid = peer.jid
-                    admins = GLOBAL_ADMIN
-                    for group_member in peer.members:
-                        member_jid = group_member.jid
-                        member_is_admin = group_member.is_admin or group_member.is_owner
-                        if member_is_admin:
-                            admins.append(member_jid)
-                        self.client.request_info_of_jids([member_jid])
-                    self.group_admins[group_jid] = admins
-                    self.group_code_lookup[group_jid] = peer.code
-                    print("[**] Group has {} Admins".format(len(admins)))
-            except:
+            # try:
+            if type(peer) is User:
+                print("[*] User: {}".format(peer))
+            if type(peer) is Group:
+                print("[*] Group: {}".format(peer))
+                group_jid = peer.jid
+                admins = []
+                for group_member in peer.members:
+                    member_jid = group_member.jid
+                    member_is_admin = group_member.is_admin or group_member.is_owner
+                    if member_is_admin:
+                        admins.append(member_jid)
+                    self.client.request_info_of_jids([member_jid])
+                self.group_admins[group_jid] = admins
+                self.group_code_lookup[group_jid] = peer.code
+                connection.register_group(group_jid, peer.code)
+                print("[**] Group has {} Admins".format(len(admins)))
+            # except:
                 print("[XXX] There was an error displaying: {} of type: {}".format(peer.jid, type(peer)))
+        connection.close()
 
     def on_friend_attribution(self, response: chatting.IncomingFriendAttribution):
         print("[+] Friend attribution request from " + response.referrer_jid)

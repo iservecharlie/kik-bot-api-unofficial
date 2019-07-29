@@ -1,5 +1,4 @@
 import json
-
 import kik_unofficial.datatypes.xmpp.chatting as chatting
 from kik_unofficial.client import KikClient
 from os import environ
