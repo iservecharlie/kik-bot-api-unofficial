@@ -1,3 +1,4 @@
+import credentials
 from gameBot.core.KikBot import KikBot
 
 

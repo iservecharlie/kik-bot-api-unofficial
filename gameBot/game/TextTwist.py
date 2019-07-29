@@ -1,12 +1,15 @@
 import json
-import kik_unofficial.datatypes.xmpp.chatting as chatting
-from kik_unofficial.client import KikClient
-from os import environ
-import httplib2
 import random
+from os import environ
 from random import shuffle
+
+import httplib2
 # pip3 install random-word
 from random_word import RandomWords
+
+import kik_unofficial.datatypes.xmpp.chatting as chatting
+from gameBot.core.persistence.Connection import Connection
+from kik_unofficial.client import KikClient
 
 
 class TextTwist:
@@ -43,24 +46,29 @@ class TextTwist:
         "hint_api_key_param": environ["word_defn_api_key_param"]
     }
 
-    def __init__(self, group_jid, text_twist_config, number_of_rounds, name_lookup, client: KikClient):
+    def __init__(self, group_jid, text_twist_config, number_of_rounds, name_lookup, client: KikClient, score_board, used_words, current_round, is_legacy):
         self.group_jid = group_jid
         self.client = client
         self.game_config = text_twist_config
         self.current_word = ""
         self.twisted_word = ""
-        self.current_round = 0
         self.number_of_rounds = number_of_rounds
         self.name_lookup = name_lookup
-        self.score_board = {}
+        self.score_board = score_board
         self.response_lock = False
-        self.used_words = []
+        self.used_words = used_words
         self.cached_hint = []
         self.random_word_generator = RandomWords()
-        self.init_game()
+        self.connection = Connection()
+        if is_legacy:
+            self.current_round = current_round
+            self.init_game("Game of Text twist has been resumed. ")
+        else:
+            self.current_round = 0
+            self.init_game("Game of Text twist has been started. ")
 
-    def init_game(self):
-        self.init_round("Game of Text twist has been started. ", False)
+    def init_game(self, message):
+        self.init_round(message, False)
 
     def end_game(self):
         if self.score_board:
@@ -85,6 +93,7 @@ class TextTwist:
                                           "Game of Text twist has ended. The winner is {}. CONGRATULATIONS! PaCanton ka naman!".format(self.name_lookup[winner_jids[0]]))
         else:
             self.client.send_chat_message(self.group_jid, "Waley naka score!")
+        self.connection.end_game(self.group_jid, "TextTwist")
 
     def init_round(self, prefix_message, skip):
         if not skip:
@@ -156,7 +165,7 @@ class TextTwist:
                     self.score_board[from_jid] = self.score_board[from_jid] + 1
                 else:
                     self.score_board[from_jid] = 1
-
+                self.connection.update_text_twist_scores(self.group_jid, from_jid, self.current_word, self.current_round)
             if self.number_of_rounds != 0 and self.number_of_rounds >= self.current_round:
                 return True
         else:
