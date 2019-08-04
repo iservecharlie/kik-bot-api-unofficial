@@ -105,9 +105,9 @@ class KikBot(KikClientCallback):
                     self.group_code_lookup[group_jid] = peer.code
                     connection.register_group(group_jid, peer.code)
                     print("[**] Group has {} Admins".format(len(admins)))
-            except Exception, e:
+            except Exception as e:
                 print("[XXX] There was an error displaying: {} of type: {}".format(peer.jid, type(peer)))
-                print(e)
+                print("[!XXX] Caused by: " + str(e))
         connection.close()
         self.game_manager.init_text_twist_legacy_sessions(self.group_admins.keys())
 
