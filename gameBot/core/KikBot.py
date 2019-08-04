@@ -16,6 +16,7 @@ from kik_unofficial.datatypes.xmpp.sign_up import RegisterResponse, UsernameUniq
 
 username = environ['kik_username']
 password = environ['kik_password']
+global_admin = environ['global_admin']
 
 
 class KikBot(KikClientCallback):
@@ -51,7 +52,7 @@ class KikBot(KikClientCallback):
                 help_message = TextTwist.TEXT_TWIST_HELP
         self.client.send_chat_message(chat_message.from_jid, help_message)
 
-        if environ['global_admin'] == chat_message.from_jid and "set admin" == clean_message:
+        if global_admin == chat_message.from_jid and "set admin" == clean_message:
             self.admin_token = True
             print("[+] Enabling adding admins...")
 
