@@ -25,7 +25,7 @@ class Connection:
         else:
             print("Adding new entry for Group ('', '{}', '{}')".format(group_jid, peer_code))
             sql_insert = "INSERT INTO group_chat(gc_kik_id, gc_name) VALUES(%s, %s)"
-            self.cursor.execute(sql_insert, (group_jid, peer_code))
+            self.cursor.execute(sql_insert, (group_jid, "#" + peer_code))
             self.connection.commit()
 
     def get_group(self, group_jid):
