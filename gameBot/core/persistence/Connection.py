@@ -16,7 +16,7 @@ class Connection:
         db_version = self.cursor.fetchone()
         print("Database version is {}".format(db_version))
 
-    def register_group(self, group_jid, peer_code):
+    def register_group(self, group_jid, peer_code="no name"):
         row = self.get_group(group_jid)
         if row:
             print("Group {} already exist. Will not create a new entry".format(row))
