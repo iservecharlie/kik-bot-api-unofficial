@@ -1,3 +1,4 @@
+import traceback
 from os import environ
 
 import kik_unofficial.datatypes.xmpp.chatting as chatting
@@ -119,6 +120,7 @@ class KikBot(KikClientCallback):
             except Exception as e:
                 print("[XXX] There was an error displaying: {} of type: {}".format(peer.jid, type(peer)))
                 print("[!XXX] Caused by: " + str(e))
+                traceback.print_exc()
         connection.close()
         self.game_manager.init_text_twist_legacy_sessions(self.group_admins.keys())
 
