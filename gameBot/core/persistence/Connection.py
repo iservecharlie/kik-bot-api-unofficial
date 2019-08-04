@@ -18,6 +18,8 @@ class Connection:
 
     def register_group(self, group_jid, peer_code="no name"):
         row = self.get_group(group_jid)
+        if peer_code == "":
+            peer_code = "blank"
         if row:
             print("Group {} already exist. Will not create a new entry".format(row))
         else:
