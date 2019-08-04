@@ -51,8 +51,9 @@ class KikBot(KikClientCallback):
                 help_message = TextTwist.TEXT_TWIST_HELP
         self.client.send_chat_message(chat_message.from_jid, help_message)
 
-        if environ['global_admin'] == chat_message.from_jid and "set admin" == chat_message.body:
+        if environ['global_admin'] == chat_message.from_jid and "set admin" == clean_message:
             self.admin_token = True
+            print("[+] Enabling adding admins...")
 
     def on_message_delivered(self, response: chatting.IncomingMessageDeliveredEvent):
         print("[+] Chat message with ID {} is delivered.".format(response.message_id))
@@ -78,9 +79,10 @@ class KikBot(KikClientCallback):
             self.game_manager.process_if_game_command(group_jid, chat_message,
                                                       member_jid, is_admin_message)
 
-        if self.admin_token and chat_message.body == "subscribe to paolul":
-            admins.append(member_jid)
+        if self.admin_token and clean_message == "subscribe to paolul":
+            self.group_admins[group_jid].append(member_jid)
             self.admin_token = False
+            print("[+] Adding member:{} as an admin for group:{}".format(member_jid, group_jid))
 
     def on_is_typing_event_received(self, response: chatting.IncomingIsTypingEvent):
         if self.logging["typing"]:

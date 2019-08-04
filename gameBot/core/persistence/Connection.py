@@ -32,12 +32,17 @@ class Connection:
         return self.cursor.fetchone()
 
     def find_game(self, group_jid, game_type):
-        sql_find = "SELECT * from game WHERE gc_kik_id like %s and game_type like %s and is_concluded is false"
+        self.find_game(group_jid, game_type, True)
+
+    def find_game(self, group_jid, game_type, exclude_concluded):
+        sql_find = "SELECT * from game WHERE gc_kik_id like %s and game_type like %s"
+        if exclude_concluded:
+            sql_find = sql_find + "  and is_concluded is false"
         self.cursor.execute(sql_find, (group_jid, game_type))
         return self.cursor.fetchone()
 
     def start_game(self, group_jid, game_type, max_round):
-        row = self.find_game(group_jid, game_type)
+        row = self.find_game(group_jid, game_type, False)
         if row:
             print("Game {} already exist. Will not create a new entry".format(row))
         else:
