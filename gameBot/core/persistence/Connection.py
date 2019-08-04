@@ -31,10 +31,7 @@ class Connection:
         self.cursor.execute(sql_find, (group_jid,))
         return self.cursor.fetchone()
 
-    def find_game(self, group_jid, game_type):
-        self.find_game(group_jid, game_type, True)
-
-    def find_game(self, group_jid, game_type, exclude_concluded):
+    def find_game(self, group_jid, game_type, exclude_concluded=True):
         sql_find = "SELECT * from game WHERE gc_kik_id like %s and game_type like %s"
         if exclude_concluded:
             sql_find = sql_find + "  and is_concluded is false"
