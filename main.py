@@ -1,8 +1,8 @@
-from gameBot.core.StateBot import StateBot
+from gameBot.core.KikBot import KikBot
 
 
 def main():
-    bot = StateBot()
+    KikBot()
 
 
 if __name__ == '__main__':

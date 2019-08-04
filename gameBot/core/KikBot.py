@@ -1,33 +1,21 @@
+from os import environ
+
 import kik_unofficial.datatypes.xmpp.chatting as chatting
-from kik_unofficial.client import KikClient
+from gameBot.core.Constants import Constants
+from gameBot.core.admin.Admin import Admin
+from gameBot.core.persistence.Connection import Connection
+from gameBot.game.GameManager import GameManager
+from gameBot.game.TextTwist import TextTwist
 from kik_unofficial.callbacks import KikClientCallback
+from kik_unofficial.client import KikClient
+from kik_unofficial.datatypes.peers import User, Group
 from kik_unofficial.datatypes.xmpp.errors import SignUpError, LoginError
+from kik_unofficial.datatypes.xmpp.login import LoginResponse, ConnectionFailedResponse
 from kik_unofficial.datatypes.xmpp.roster import FetchRosterResponse, PeerInfoResponse
 from kik_unofficial.datatypes.xmpp.sign_up import RegisterResponse, UsernameUniquenessResponse
-from kik_unofficial.datatypes.xmpp.login import LoginResponse, ConnectionFailedResponse
-from kik_unofficial.datatypes.peers import User, Group
-
-from game.TextTwist import TextTwist
-from core.WordBank import WordBank
-
-from os import environ
 
 username = environ['kik_username']
 password = environ['kik_password']
-
-LEAVE_TRIGGER = "layas kulas"
-GAME_LIST_TRIGGER = "laro tayo kulas"
-TEST_TRIGGER = "ping"
-
-DEFAULT_HELP_MESSAGE = "Base commands:  \n" \
-                       " Admin only: \n" \
-                       "  " + LEAVE_TRIGGER + " - bot leaves \n" \
-                       "  " + GAME_LIST_TRIGGER + " - game list \n" \
-                       " Game bot manual. For help with game commands reply with 'man [game name]." \
-                       "  Games available: texttwist."
-KIK_BOT_TRIGGERS = [LEAVE_TRIGGER, GAME_LIST_TRIGGER, TEST_TRIGGER]
-
-GLOBAL_ADMIN = [environ['global_admin_user'], environ['global_admin_member']]
 
 
 class KikBot(KikClientCallback):
@@ -42,8 +30,8 @@ class KikBot(KikClientCallback):
             "read": False,
             "group_chat": True
         }
-        self.word_bank = WordBank()
-        self.text_twist_sessions = {}
+        self.admin_actions = Admin(self.client, self.group_code_lookup, self.name_lookup)
+        self.game_manager = GameManager(self.client, self.group_code_lookup, self.name_lookup)
 
     def on_authenticated(self):
         print("Now I'm Authenticated, let's request roster")
@@ -55,10 +43,10 @@ class KikBot(KikClientCallback):
     def on_chat_message_received(self, chat_message: chatting.IncomingChatMessage):
         print("[+] '{}' says: {}".format(chat_message.from_jid, chat_message.body))
         clean_message = chat_message.body.strip().lower()
-        help_message = DEFAULT_HELP_MESSAGE
+        help_message = Constants.DEFAULT_HELP_MESSAGE
         if clean_message.startswith("man "):
             game_name = clean_message.split(" ")[1]
-            if "texttwist" == game_name:
+            if "tt" == game_name or "texttwist" == game_name:
                 help_message = TextTwist.TEXT_TWIST_HELP
         self.client.send_chat_message(chat_message.from_jid, help_message)
 
@@ -75,53 +63,16 @@ class KikBot(KikClientCallback):
         group_code = self.group_code_lookup[group_jid]
         name = self.name_lookup[member_jid]
         clean_message = chat_message.body.strip().lower()
+        admins = self.group_admins[group_jid]
+        is_admin_message = member_jid in admins
         if self.logging['group_chat']:
             print("[+] '{}' from group '{}' says: {}".format(name, group_code, chat_message.body))
 
-        admins = self.group_admins[group_jid]
-        if clean_message in KIK_BOT_TRIGGERS:
-            if clean_message == LEAVE_TRIGGER and member_jid in admins:
-                print("[+] Leaving group {}.".format(group_code))
-                self.client.leave_group(group_jid)
-            elif clean_message == TEST_TRIGGER:
-                self.client.send_chat_message(group_jid, "-GER")
-        elif clean_message in TextTwist.TRIGGERS or clean_message.startswith(TextTwist.START):
-            if group_jid in self.text_twist_sessions:
-                text_twist = self.text_twist_sessions[group_jid]
-                if clean_message == TextTwist.START and member_jid in admins:
-                    print("[+] Group {} has an active game session of TextTwist.".format(group_code))
-                    self.client.send_chat_message(group_jid, "There is already a game of Text Twist active.\n"
-                                                             " To end the game an admin must enter: "
-                                                             "'" + TextTwist.END + "'")
-                elif clean_message == TextTwist.END and member_jid in admins:
-                    print("[+] Group {} ending a game session of TextTwist.".format(group_code))
-                    text_twist.end_game()
-                    del self.text_twist_sessions[group_jid]
-                elif member_jid in admins:
-                    text_twist.process_admin_command_trigger(chat_message)
-                else:
-                    text_twist.process_command_trigger(chat_message)
-            else:
-                if clean_message.startswith(TextTwist.START) and member_jid in admins:
-                    print("[+] Group {} starting a game session of TextTwist.".format(group_code))
-                    number_of_rounds = 0
-                    tokens = clean_message.replace(TextTwist.START, "").split(" ")
-                    if len(tokens) > 1:
-                        try:
-                            number_of_rounds = int(tokens[0])
-                        except ValueError:
-                            number_of_rounds = 0
-                    self.text_twist_sessions[group_jid] = TextTwist(group_jid, TextTwist.DEFAULT_CONFIG,
-                                                                    number_of_rounds, self.name_lookup, self.client)
-                elif clean_message == TextTwist.END and member_jid in admins:
-                    self.client.send_chat_message(group_jid, "There is no game of Text Twist active.\n"
-                                                             " To start a game an admin must enter: "
-                                                            "'" + TextTwist.START + "'")
-        elif group_jid in self.text_twist_sessions:
-            end_game = self.text_twist_sessions[group_jid].process_response(chat_message)
-            if end_game:
-                self.text_twist_sessions[group_jid].end_game()
-                del self.text_twist_sessions[group_jid]
+        is_admin_trigger = self.admin_actions.process_if_admin_command(group_jid, clean_message,
+                                                                       member_jid, is_admin_message)
+        if not is_admin_trigger:
+            self.game_manager.process_if_game_command(group_jid, chat_message,
+                                                      member_jid, is_admin_message)
 
     def on_is_typing_event_received(self, response: chatting.IncomingIsTypingEvent):
         if self.logging["typing"]:
@@ -134,6 +85,8 @@ class KikBot(KikClientCallback):
 
     def on_roster_received(self, response: FetchRosterResponse):
         print("[*]ROSTER init:")
+        group_jids = []
+        connection = Connection()
         for peer in response.peers:
             try:
                 if type(peer) is User:
@@ -141,7 +94,7 @@ class KikBot(KikClientCallback):
                 if type(peer) is Group:
                     print("[*] Group: {}".format(peer))
                     group_jid = peer.jid
-                    admins = GLOBAL_ADMIN
+                    admins = []
                     for group_member in peer.members:
                         member_jid = group_member.jid
                         member_is_admin = group_member.is_admin or group_member.is_owner
@@ -150,9 +103,12 @@ class KikBot(KikClientCallback):
                         self.client.request_info_of_jids([member_jid])
                     self.group_admins[group_jid] = admins
                     self.group_code_lookup[group_jid] = peer.code
+                    connection.register_group(group_jid, peer.code)
                     print("[**] Group has {} Admins".format(len(admins)))
             except:
                 print("[XXX] There was an error displaying: {} of type: {}".format(peer.jid, type(peer)))
+        connection.close()
+        self.game_manager.init_text_twist_legacy_sessions(self.group_admins.keys())
 
     def on_friend_attribution(self, response: chatting.IncomingFriendAttribution):
         print("[+] Friend attribution request from " + response.referrer_jid)
