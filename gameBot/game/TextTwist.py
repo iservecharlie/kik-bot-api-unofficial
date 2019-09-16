@@ -198,7 +198,10 @@ class TextTwist:
     def display_score(self, final):
         scores = []
         for key, val in sorted(self.score_board.items(), key=lambda kv: (kv[1], kv[0]), reverse=True):
-            scores.append(" {}: {}".format(self.name_lookup[key], str(val)))
+            try:
+                scores.append(" {}: {}".format(self.name_lookup[key], str(val)))
+            except KeyError as key_error:
+                scores.append(" {}: {}".format("** pumanaw na **, str(val)))
         message = "Current Scores:\n{}".format("\n".join(scores))
         if final:
             message = "Final Scores:\n{}".format("\n".join(scores))
