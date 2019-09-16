@@ -201,7 +201,7 @@ class TextTwist:
             try:
                 scores.append(" {}: {}".format(self.name_lookup[key], str(val)))
             except KeyError as key_error:
-                scores.append(" {}: {}".format("** pumanaw na **, str(val)))
+                scores.append(" {}: {}".format("** pumanaw na **", str(val)))
         message = "Current Scores:\n{}".format("\n".join(scores))
         if final:
             message = "Final Scores:\n{}".format("\n".join(scores))
