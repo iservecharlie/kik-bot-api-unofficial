@@ -214,6 +214,20 @@ class KikClient:
         else:
             return self._send_xmpp_element(chatting.OutgoingIsTypingEvent(peer_jid, is_typing))
 
+    def send_gif_image(self, peer_jid: str, search_term):
+        """
+        Sends a GIF image to another person or a group with the given JID/username.
+        The GIF is taken from tendor.com, based on search keywords.
+        :param peer_jid: The Jabber ID for which to send the message (looks like username_ejs@talk.kik.com
+        :param search_term: The search term to use when searching GIF images on tendor.com
+        """
+        if self.is_group_jid(peer_jid):
+            log.info("[+] Sending a GIF message to group '{}'...".format(peer_jid))
+            return self._send_xmpp_element(chatting.OutgoingGIFMessage(peer_jid, search_term, True))
+        else:
+            log.info("[+] Sending a GIF message to user '{}'...".format(peer_jid))
+            return self._send_xmpp_element(chatting.OutgoingGIFMessage(peer_jid, search_term, False))
+
     def request_info_of_jids(self, peer_jids: Union[str, List[str]]):
         """
         Requests basic information (username, display name, picture) of some peer JIDs.
@@ -525,7 +539,7 @@ class KikClient:
 
         :param iq_element: The iq XML element we just received from kik.
         """
-        self._handle_xmlns(iq_element.query['xmlns'], iq_element)
+        self._handle_xmlns(iq_element.query['xmlns:'], iq_element)
 
     def _handle_xmpp_message(self, xmpp_message: BeautifulSoup):
         """

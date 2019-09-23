@@ -24,7 +24,7 @@ class EchoBot(KikClientCallback):
         self.client = KikClient(self, "your_kik_username", "your_kik_password")
 
     def on_authenticated(self):
-        self.client.request_roster()
+        self.client.request_roster() # request list of chat partners
 
     def on_chat_message_received(self, chat_message: chatting.IncomingChatMessage):
         self.client.send_chat_message(chat_message.from_jid, "You said \"" + chat_message.body + "\"!")
@@ -40,8 +40,9 @@ Currently Supported Operations:
 - Search for groups and join them [Experimental]
 - Receive media content: camera, gallery, stickers
 - Add a kik user as a friend
+- Send images (including GIFs, using a tendor.com API key)
 
-Sending multimedia (images, videos) is not suported yet.
+Sending videos or recordings is not supported yet.
 
 ## Troubleshooting
-If you are on Windows and you are unable to install the lxml pacakge, use the binary installers from PyPi [here](https://pypi.python.org/pypi/lxml/3.3.5#downloads).
+If you are on Windows and you are unable to install the lxml package, use the binary installers from PyPi [here](https://pypi.python.org/pypi/lxml/3.3.5#downloads).
